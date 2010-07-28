@@ -1,0 +1,5 @@
+
+This is SonicFX, an experimental multi-threaded audio processing engine written for Windows
+with the intention to turn it into a POSIX compliant piece of softwre in the near future.
+
+Designed and implemented by Ilyes Gouta, ilyes.gouta@gmail.com

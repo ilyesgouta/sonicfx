@@ -1,5 +1,5 @@
 //
-// Core Audio (Windows 7) driver for SonicFX
+// Core Audio (MMdevice + WASAPI) driver for SonicFX
 // Copyright (C) 2009-2010, Ilyes Gouta (ilyes.gouta@gmail.com)
 //
 // SonicFX is free software: you can redistribute it and/or modify
@@ -17,12 +17,12 @@
 //
 
 #include <windows.h>
-#include <mmsystem.h>
+#include <Mmdeviceapi.h>
+#include <stdio.h>
 #include <assert.h>
 
-#include <stdio.h>
-
 #include <AudioDriver.h>
+#include <NiDebug.h>
 
 class __declspec(dllexport) CoreAudioDriver : public AudioDriver {
 public:
@@ -54,9 +54,58 @@ CoreAudioDriver::~CoreAudioDriver()
 {
 }
 
-BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
+BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpCaps)
 {
-    return TRUE;
+    const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
+    const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
+
+    IMMDeviceEnumerator *pEnumerator = NULL;
+    IMMDeviceCollection *pRenderDevices = NULL, *pCaptureDevices = NULL;
+    unsigned int nCaptureDevices, nRenderDevices;
+
+    BOOL ret = TRUE;
+
+    HRESULT hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, IID_IMMDeviceEnumerator, (void**)&pEnumerator);
+
+    if (hr != S_OK) {
+        NiDebug("CoCreateInstance failed!");
+        ret = FALSE; goto fini;
+    }
+
+    hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCaptureDevices);
+    hr |= pEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pRenderDevices);
+
+    if (hr != S_OK) {
+        NiDebug("Failed enumerating capture/render devices! error: 0x%08x", hr);
+        ret = FALSE; goto fini;
+    }
+
+    pCaptureDevices->GetCount(&nCaptureDevices);
+    pRenderDevices->GetCount(&nRenderDevices);
+
+    if (!nCaptureDevices || !nRenderDevices) {
+        NiDebug("Empty capture/render devices sets!");
+        ret = FALSE; goto fini;
+    }
+
+    if ((lpCaps->iPreferredCaptureDevice >= nCaptureDevices) ||
+        (lpCaps->iPreferredRenderDevice >= nRenderDevices))
+    {
+        NiDebug("Mismatching preferred capture/render device!");
+        ret = FALSE; goto fini;
+    }
+
+fini:
+    if (pEnumerator)
+        pEnumerator->Release();
+
+    if (pCaptureDevices)
+        pCaptureDevices->Release();
+
+    if (pRenderDevices)
+        pRenderDevices->Release();
+
+    return ret;
 }
 
 void CoreAudioDriver::Close(LPAUDIODRIVERCAPS lpCaps)

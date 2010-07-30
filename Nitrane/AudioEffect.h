@@ -40,47 +40,47 @@
 using namespace std;
 
 typedef enum {
-	PARAM_SLIDER,
-	PARAM_KNOB,
-	PARAM_SWITCH
+    PARAM_SLIDER,
+    PARAM_KNOB,
+    PARAM_SWITCH
 } PARAMETERTYPE;
 
 typedef struct {
-	PARAMETERTYPE type;
-	float fMinimum;
-	float fMaximum;
-	float fStep;
-	float fValue;
-	TCHAR name[32];
+    PARAMETERTYPE type;
+    float fMinimum;
+    float fMaximum;
+    float fStep;
+    float fValue;
+    TCHAR name[32];
 } PARAMETERDESC, *LPPARAMETERDESC;
 
 class DECLSPEC AudioEffect {
 public:
-	AudioEffect();
-	virtual ~AudioEffect();
+    AudioEffect();
+    virtual ~AudioEffect();
 
-	virtual BOOL Initialize() = 0;
-	virtual void Finalize() = 0;
+    virtual BOOL Initialize() = 0;
+    virtual void Finalize() = 0;
 
-	virtual BOOL IsMultiThreadable() = 0;
-	virtual BOOL IsInPlaceProcessing() = 0;
-	
-	virtual void Configure(const AUDIODRIVERCAPS& caps) = 0;
-	virtual int GetPreferredPacketSize() = 0;
+    virtual BOOL IsMultiThreadable() = 0;
+    virtual BOOL IsInPlaceProcessing() = 0;
+    
+    virtual void Configure(const AUDIODRIVERCAPS& caps) = 0;
+    virtual int GetPreferredPacketSize() = 0;
 
-	virtual void Process(float** in, float** out, int offset, int samples) = 0;
-	virtual void Process(float** in, int offset, int samples) = 0;
+    virtual void Process(float** in, float** out, int offset, int samples) = 0;
+    virtual void Process(float** in, int offset, int samples) = 0;
 
-	virtual const int GetParametersCount() { return 0; }
-	virtual void GetParameterDesc(int id, LPPARAMETERDESC lpDesc);
+    virtual const int GetParametersCount() { return 0; }
+    virtual void GetParameterDesc(int id, LPPARAMETERDESC lpDesc);
 
-	virtual void SetParameterValue(int id, float val) {}
-	virtual float GetPrameterValue(int id) { return 0.0f; }
+    virtual void SetParameterValue(int id, float val) {}
+    virtual float GetPrameterValue(int id) { return 0.0f; }
 
-	virtual const char* GetDescription() = 0;
+    virtual const char* GetDescription() = 0;
 
-	virtual const int GetInputPinsCount() const = 0;
-	virtual const int GetOutputPinsCount() const = 0;
+    virtual const int GetInputPinsCount() const = 0;
+    virtual const int GetOutputPinsCount() const = 0;
 };
 
 typedef AudioEffect AUDIOEFFECT;

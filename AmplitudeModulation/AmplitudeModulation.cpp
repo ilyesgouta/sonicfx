@@ -24,36 +24,36 @@
 
 class __declspec(dllexport) AmplitudeModulation : public AudioEffect {
 public:
-	AmplitudeModulation();
-	~AmplitudeModulation();
+    AmplitudeModulation();
+    ~AmplitudeModulation();
 
-	BOOL Initialize();
-	void Finalize();
+    BOOL Initialize();
+    void Finalize();
 
-	BOOL IsMultiThreadable() { return FALSE; }
-	BOOL IsInPlaceProcessing() { return TRUE; }
-	
-	int GetPreferredPacketSize();
-	void Configure(const AUDIODRIVERCAPS& caps);
+    BOOL IsMultiThreadable() { return FALSE; }
+    BOOL IsInPlaceProcessing() { return TRUE; }
+    
+    int GetPreferredPacketSize();
+    void Configure(const AUDIODRIVERCAPS& caps);
 
-	void Process(float** in, float** out, int offset, int samples);
-	void Process(float** in, int offset, int samples);
-	
-	const char* GetDescription();
+    void Process(float** in, float** out, int offset, int samples);
+    void Process(float** in, int offset, int samples);
+    
+    const char* GetDescription();
 
-	const int GetInputPinsCount() const;
-	const int GetOutputPinsCount() const;
+    const int GetInputPinsCount() const;
+    const int GetOutputPinsCount() const;
 
 private:
-	float m_Time;
-	int m_ModulationFreq;
-	float m_SamplingFreq;
+    float m_Time;
+    int m_ModulationFreq;
+    float m_SamplingFreq;
 };
 
 AmplitudeModulation::AmplitudeModulation()
 {
-	m_ModulationFreq = 30; // 30 Hz
-	m_Time = 0;
+    m_ModulationFreq = 30; // 30 Hz
+    m_Time = 0;
 }
 
 AmplitudeModulation::~AmplitudeModulation()
@@ -62,7 +62,7 @@ AmplitudeModulation::~AmplitudeModulation()
 
 BOOL AmplitudeModulation::Initialize()
 {
-	return TRUE;
+    return TRUE;
 }
 
 void AmplitudeModulation::Finalize()
@@ -71,13 +71,13 @@ void AmplitudeModulation::Finalize()
 
 int AmplitudeModulation::GetPreferredPacketSize()
 {
-	return 512;
+    return 512;
 }
 
 void AmplitudeModulation::Configure(const AUDIODRIVERCAPS& caps)
 {
-	m_SamplingFreq = 1.0f / caps.nSamplingRate;
-	printf("AmplitudeModulation: delta == %f\n", m_SamplingFreq);
+    m_SamplingFreq = 1.0f / caps.nSamplingRate;
+    printf("AmplitudeModulation: delta == %f\n", m_SamplingFreq);
 }
 
 void AmplitudeModulation::Process(float** in, float** out, int offset, int samples)
@@ -86,41 +86,41 @@ void AmplitudeModulation::Process(float** in, float** out, int offset, int sampl
 
 void AmplitudeModulation::Process(float** in, int offset, int samples)
 {
-	float* pSrc = in[0] + offset;
+    float* pSrc = in[0] + offset;
 
-	for (int i = 0; i < samples; i++) {
-		pSrc[i] *= sin(2 * 3.1415926f * m_ModulationFreq * m_Time);
-		m_Time += m_SamplingFreq;
-	}
+    for (int i = 0; i < samples; i++) {
+        pSrc[i] *= sin(2 * 3.1415926f * m_ModulationFreq * m_Time);
+        m_Time += m_SamplingFreq;
+    }
 }
 
 const int AmplitudeModulation::GetInputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const int AmplitudeModulation::GetOutputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const char* AmplitudeModulation::GetDescription()
 {
-	return "AmplitudeModulation v0.1";
+    return "AmplitudeModulation v0.1";
 }
 
 extern "C" __declspec(dllexport) void GetAudioEffectFactory(LPAUDIOEFFECT *lpAudioEffect)
 {
-	*lpAudioEffect = new AmplitudeModulation();
+    *lpAudioEffect = new AmplitudeModulation();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 {
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
+    switch (fdwReason) {
+    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
 
-	return TRUE;
+    return TRUE;
 }

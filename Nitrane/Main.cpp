@@ -24,16 +24,16 @@
 
 extern "C" __declspec(dllexport) LPNITRANEINSTANCE CreateInstance()
 {
-	return (new Nitrane());
+    return (new Nitrane());
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 {
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
+    switch (fdwReason) {
+    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
 
-	return TRUE;
+    return TRUE;
 }

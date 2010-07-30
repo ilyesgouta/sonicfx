@@ -26,21 +26,21 @@
 
 class __declspec(dllexport) CoreAudioDriver : public AudioDriver {
 public:
-	CoreAudioDriver();
-	~CoreAudioDriver();
+    CoreAudioDriver();
+    ~CoreAudioDriver();
 
-	BOOL Open(LPAUDIODRIVERCAPS lpCaps);
-	void Close(LPAUDIODRIVERCAPS lpCaps);
+    BOOL Open(LPAUDIODRIVERCAPS lpCaps);
+    void Close(LPAUDIODRIVERCAPS lpCaps);
 
-	BOOL Start();
-	void Stop();
+    BOOL Start();
+    void Stop();
 
-	void Write(int idx);
+    void Write(int idx);
 
-	void SetQueueSize(int cPackets);
-	float GetPacketLatency();
+    void SetQueueSize(int cPackets);
+    float GetPacketLatency();
 
-	const char* GetDescription();
+    const char* GetDescription();
 
 private:
 
@@ -56,7 +56,7 @@ CoreAudioDriver::~CoreAudioDriver()
 
 BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
 {
-	return TRUE;
+    return TRUE;
 }
 
 void CoreAudioDriver::Close(LPAUDIODRIVERCAPS lpCaps)
@@ -65,7 +65,7 @@ void CoreAudioDriver::Close(LPAUDIODRIVERCAPS lpCaps)
 
 BOOL CoreAudioDriver::Start()
 {
-	return TRUE;
+    return TRUE;
 }
 
 void CoreAudioDriver::Stop()
@@ -78,7 +78,7 @@ void CoreAudioDriver::Write(int idx)
 
 float CoreAudioDriver::GetPacketLatency()
 {
-	return 0;
+    return 0;
 }
 
 void CoreAudioDriver::SetQueueSize(int cPackets)
@@ -87,21 +87,21 @@ void CoreAudioDriver::SetQueueSize(int cPackets)
 
 const char* CoreAudioDriver::GetDescription()
 {
-	return "CoreAudio Driver v0.1";
+    return "CoreAudio Driver v0.1";
 }
 
 extern "C" __declspec(dllexport) void GetAudioDriverFactory(LPAUDIODRIVER *lpAudioDriver)
 {
-	*lpAudioDriver = new CoreAudioDriver();
+    *lpAudioDriver = new CoreAudioDriver();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 {
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
+    switch (fdwReason) {
+    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
 
-	return TRUE;
+    return TRUE;
 }

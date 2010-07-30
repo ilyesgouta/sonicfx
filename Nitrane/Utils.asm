@@ -26,57 +26,57 @@ section .text align=16
 global _float2short
 
 _float2short:
-	mov ebx, [esp + 4]        ; float* in
-	mov eax, [esp + 8]        ; short* out
-	mov ecx, [esp + 12]       ; int size
+    mov ebx, [esp + 4]        ; float* in
+    mov eax, [esp + 8]        ; short* out
+    mov ecx, [esp + 12]       ; int size
 
 .loop:
-	cvtps2dq xmm1, [ebx]      ; convert 4 floats to 4 doublewords.
-	cvtps2dq xmm0, [ebx + 16] ; convert 4 floats to 4 doublewords.
+    cvtps2dq xmm1, [ebx]      ; convert 4 floats to 4 doublewords.
+    cvtps2dq xmm0, [ebx + 16] ; convert 4 floats to 4 doublewords.
 
-	packssdw xmm1, xmm0       ; convert the 8 doublewords from xmm0 and xmm1 to 8 saturated words.
-	add ebx, 32
+    packssdw xmm1, xmm0       ; convert the 8 doublewords from xmm0 and xmm1 to 8 saturated words.
+    add ebx, 32
 
-	movdqa [eax], xmm1
-	add eax, 16
+    movdqa [eax], xmm1
+    add eax, 16
 
-	sub ecx, 8
-	jnz .loop
+    sub ecx, 8
+    jnz .loop
 
-	ret
+    ret
 
 ; void short2float(short* in, float* out, int size)
 ; in/out must be aligned on a 16 bytes boundary, size shoule be a multiple of 8.
 global _short2float
 
 _short2float:
-	mov ebx, [esp + 4]      ; short* in
-	mov eax, [esp + 8]      ; float* out
-	mov ecx, [esp + 12]     ; int size
+    mov ebx, [esp + 4]      ; short* in
+    mov eax, [esp + 8]      ; float* out
+    mov ecx, [esp + 12]     ; int size
 
 .loop:
-	movdqa xmm0, [ebx]      ; fetch 8 words from memory.
-	pxor xmm1, xmm1         ; zero'ed.
+    movdqa xmm0, [ebx]      ; fetch 8 words from memory.
+    pxor xmm1, xmm1         ; zero'ed.
 
-	movdqa xmm3, xmm0
-	add ebx, 16
+    movdqa xmm3, xmm0
+    add ebx, 16
 
-	punpcklwd xmm1, xmm0
-	psrad xmm1, 16          ; reconstruct the signed doubleword representation.
+    punpcklwd xmm1, xmm0
+    psrad xmm1, 16          ; reconstruct the signed doubleword representation.
 
-	cvtdq2ps xmm2, xmm1     ; convert 4 doublewords to 4 floats.
-	movaps [eax], xmm2
+    cvtdq2ps xmm2, xmm1     ; convert 4 doublewords to 4 floats.
+    movaps [eax], xmm2
 
-	pxor xmm1, xmm1         ; zero'ed.
-	add eax, 32
+    pxor xmm1, xmm1         ; zero'ed.
+    add eax, 32
 
-	punpckhwd xmm1, xmm3
-	psrad xmm1, 16          ; reconstruct the signed doubleword representation.
+    punpckhwd xmm1, xmm3
+    psrad xmm1, 16          ; reconstruct the signed doubleword representation.
 
-	cvtdq2ps xmm2, xmm1     ; convert 4 doublewords to 4 floats.
-	movaps [eax - 16], xmm2
+    cvtdq2ps xmm2, xmm1     ; convert 4 doublewords to 4 floats.
+    movaps [eax - 16], xmm2
 
-	sub ecx, 8
-	jnz .loop
+    sub ecx, 8
+    jnz .loop
 
-	ret
+    ret

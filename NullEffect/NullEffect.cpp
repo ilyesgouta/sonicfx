@@ -23,25 +23,25 @@
 
 class __declspec(dllexport) NullAudioEffect : public AudioEffect {
 public:
-	NullAudioEffect();
-	~NullAudioEffect();
+    NullAudioEffect();
+    ~NullAudioEffect();
 
-	BOOL Initialize();
-	void Finalize();
+    BOOL Initialize();
+    void Finalize();
 
-	BOOL IsMultiThreadable() { return FALSE; }
-	BOOL IsInPlaceProcessing() { return TRUE; }
-	
-	int GetPreferredPacketSize();
-	void Configure(const AUDIODRIVERCAPS& caps);
+    BOOL IsMultiThreadable() { return FALSE; }
+    BOOL IsInPlaceProcessing() { return TRUE; }
+    
+    int GetPreferredPacketSize();
+    void Configure(const AUDIODRIVERCAPS& caps);
 
-	void Process(float** in, float** out, int offset, int samples);
-	void Process(float** in, int offset, int samples);
-	
-	const char* GetDescription();
+    void Process(float** in, float** out, int offset, int samples);
+    void Process(float** in, int offset, int samples);
+    
+    const char* GetDescription();
 
-	const int GetInputPinsCount() const;
-	const int GetOutputPinsCount() const;
+    const int GetInputPinsCount() const;
+    const int GetOutputPinsCount() const;
 };
 
 NullAudioEffect::NullAudioEffect()
@@ -54,7 +54,7 @@ NullAudioEffect::~NullAudioEffect()
 
 BOOL NullAudioEffect::Initialize()
 {
-	return TRUE;
+    return TRUE;
 }
 
 void NullAudioEffect::Finalize()
@@ -63,7 +63,7 @@ void NullAudioEffect::Finalize()
 
 int NullAudioEffect::GetPreferredPacketSize()
 {
-	return 1024;
+    return 1024;
 }
 
 void NullAudioEffect::Configure(const AUDIODRIVERCAPS& caps)
@@ -72,41 +72,41 @@ void NullAudioEffect::Configure(const AUDIODRIVERCAPS& caps)
 
 void NullAudioEffect::Process(float** in, float** out, int offset, int samples)
 {
-	// Do nothing since we're doing a null in-place transformation.
+    // Do nothing since we're doing a null in-place transformation.
 }
 
 void NullAudioEffect::Process(float** in, int offset, int samples)
 {
-	// Do nothing since we're doing a null in-place transformation.
+    // Do nothing since we're doing a null in-place transformation.
 }
 
 const int NullAudioEffect::GetInputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const int NullAudioEffect::GetOutputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const char* NullAudioEffect::GetDescription()
 {
-	return "NullAudioEffect v0.1";
+    return "NullAudioEffect v0.1";
 }
 
 extern "C" __declspec(dllexport) void GetAudioEffectFactory(LPAUDIOEFFECT *lpAudioEffect)
 {
-	*lpAudioEffect = new NullAudioEffect();
+    *lpAudioEffect = new NullAudioEffect();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 {
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
+    switch (fdwReason) {
+    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
 
-	return TRUE;
+    return TRUE;
 }

@@ -30,60 +30,60 @@ extern "C" __declspec(dllimport) LPNITRANEINSTANCE CreateInstance();
 
 int main(int argc, char** argv)
 {
-	g_NitraneInst = CreateInstance();
-	
-	g_NitraneInst->Initialize(NULL, 1);
-	
-	for (vector <LPAUDIODRIVER>::const_iterator it1 = g_NitraneInst->EnumAudioDrivers().begin(); it1 != g_NitraneInst->EnumAudioDrivers().end(); it1++)
-		printf("%s\n", (*it1)->GetDescription());
-	
-	for (vector <LPAUDIOEFFECTFACTORY>::const_iterator it2 = g_NitraneInst->EnumAudioEffects().begin(); it2 != g_NitraneInst->EnumAudioEffects().end(); it2++) {
-		LPAUDIOEFFECT lpEffect;
-		(*it2)(&lpEffect); // Create a new instance
-		printf("%s\n", lpEffect->GetDescription());
-		delete lpEffect;
-	}
-	
-	vector <LPAUDIODRIVER>::const_iterator DriversItr = g_NitraneInst->EnumAudioDrivers().begin();
-	
-	LPAUDIODRIVER lpAudioDriver = (*DriversItr);
-	g_NitraneInst->SetAudioDriver(lpAudioDriver); // Select the first driver.
+    g_NitraneInst = CreateInstance();
+    
+    g_NitraneInst->Initialize(NULL, 1);
+    
+    for (vector <LPAUDIODRIVER>::const_iterator it1 = g_NitraneInst->EnumAudioDrivers().begin(); it1 != g_NitraneInst->EnumAudioDrivers().end(); it1++)
+        printf("%s\n", (*it1)->GetDescription());
+    
+    for (vector <LPAUDIOEFFECTFACTORY>::const_iterator it2 = g_NitraneInst->EnumAudioEffects().begin(); it2 != g_NitraneInst->EnumAudioEffects().end(); it2++) {
+        LPAUDIOEFFECT lpEffect;
+        (*it2)(&lpEffect); // Create a new instance
+        printf("%s\n", lpEffect->GetDescription());
+        delete lpEffect;
+    }
+    
+    vector <LPAUDIODRIVER>::const_iterator DriversItr = g_NitraneInst->EnumAudioDrivers().begin();
+    
+    LPAUDIODRIVER lpAudioDriver = (*DriversItr);
+    g_NitraneInst->SetAudioDriver(lpAudioDriver); // Select the first driver.
 
-	lpAudioDriver->SetQueueSize(1); // 1 packet for prebuffering
+    lpAudioDriver->SetQueueSize(1); // 1 packet for prebuffering
 
-	vector<LPAUDIOEFFECTFACTORY>::const_iterator EffectItr = g_NitraneInst->EnumAudioEffects().begin();
-	
-	LPAUDIOEFFECT lpEffect1, lpEffect2;
+    vector<LPAUDIOEFFECTFACTORY>::const_iterator EffectItr = g_NitraneInst->EnumAudioEffects().begin();
+    
+    LPAUDIOEFFECT lpEffect1, lpEffect2;
 
-	(*EffectItr)(&lpEffect1);
-	(*EffectItr)(&lpEffect2);
+    (*EffectItr)(&lpEffect1);
+    (*EffectItr)(&lpEffect2);
 
-	LPEFFECTCTX lpCtx1 = new EFFECTCTX(lpEffect1); // Who has to manage these? Nitrane or the application?
-	LPEFFECTCTX lpCtx2 = new EFFECTCTX(lpEffect2);
+    LPEFFECTCTX lpCtx1 = new EFFECTCTX(lpEffect1); // Who has to manage these? Nitrane or the application?
+    LPEFFECTCTX lpCtx2 = new EFFECTCTX(lpEffect2);
 
-	g_NitraneInst->ConnectEffect(NULL, lpCtx1, 0, 0);
-	//g_NitraneInst->ConnectEffect(lpCtx1, lpCtx2, 0, 0);
-	//g_NitraneInst->ConnectEffect(lpCtx2, NULL, 0, 0);
-	g_NitraneInst->ConnectEffect(lpCtx1, NULL, 0, 0);
+    g_NitraneInst->ConnectEffect(NULL, lpCtx1, 0, 0);
+    //g_NitraneInst->ConnectEffect(lpCtx1, lpCtx2, 0, 0);
+    //g_NitraneInst->ConnectEffect(lpCtx2, NULL, 0, 0);
+    g_NitraneInst->ConnectEffect(lpCtx1, NULL, 0, 0);
 
-	//lpEffect1->SetParameterValue(0, 10.0f);
+    //lpEffect1->SetParameterValue(0, 10.0f);
 
-	printf("Starting...\n");
-	assert(g_NitraneInst->Start() == TRUE);
+    printf("Starting...\n");
+    assert(g_NitraneInst->Start() == TRUE);
 
-	printf("Sleeping for 30 seconds...\n");
-	int g_Timer = 30;
+    printf("Sleeping for 30 seconds...\n");
+    int g_Timer = 30;
 
-	while (g_Timer--) {
-		printf("Processing latency: %.03f ms.\n", g_NitraneInst->GetProcessingLatency() + lpAudioDriver->GetPacketLatency());
+    while (g_Timer--) {
+        printf("Processing latency: %.03f ms.\n", g_NitraneInst->GetProcessingLatency() + lpAudioDriver->GetPacketLatency());
         Sleep(1000);
-	}
+    }
 
-	printf("Shutting down...\n");
-	g_NitraneInst->Stop();
-	
-	delete g_NitraneInst;
-	printf("Done.\n");
+    printf("Shutting down...\n");
+    g_NitraneInst->Stop();
+    
+    delete g_NitraneInst;
+    printf("Done.\n");
 
-	return 0;
+    return 0;
 }

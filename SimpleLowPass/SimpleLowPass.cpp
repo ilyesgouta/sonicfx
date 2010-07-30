@@ -24,33 +24,33 @@
 
 class __declspec(dllexport) SimpleLowPass : public AudioEffect {
 public:
-	SimpleLowPass();
-	~SimpleLowPass();
+    SimpleLowPass();
+    ~SimpleLowPass();
 
-	BOOL Initialize();
-	void Finalize();
+    BOOL Initialize();
+    void Finalize();
 
-	BOOL IsMultiThreadable() { return FALSE; }
-	BOOL IsInPlaceProcessing() { return TRUE; }
-	
-	int GetPreferredPacketSize();
-	void Configure(const AUDIODRIVERCAPS& caps);
+    BOOL IsMultiThreadable() { return FALSE; }
+    BOOL IsInPlaceProcessing() { return TRUE; }
+    
+    int GetPreferredPacketSize();
+    void Configure(const AUDIODRIVERCAPS& caps);
 
-	void Process(float** in, float** out, int offset, int samples);
-	void Process(float** in, int offset, int samples);
-	
-	const char* GetDescription();
+    void Process(float** in, float** out, int offset, int samples);
+    void Process(float** in, int offset, int samples);
+    
+    const char* GetDescription();
 
-	const int GetInputPinsCount() const;
-	const int GetOutputPinsCount() const;
+    const int GetInputPinsCount() const;
+    const int GetOutputPinsCount() const;
 
 private:
-	float m_fAlpha;
+    float m_fAlpha;
 };
 
 SimpleLowPass::SimpleLowPass()
 {
-	m_fAlpha = 0.5f;
+    m_fAlpha = 0.5f;
 }
 
 SimpleLowPass::~SimpleLowPass()
@@ -59,7 +59,7 @@ SimpleLowPass::~SimpleLowPass()
 
 BOOL SimpleLowPass::Initialize()
 {
-	return TRUE;
+    return TRUE;
 }
 
 void SimpleLowPass::Finalize()
@@ -68,7 +68,7 @@ void SimpleLowPass::Finalize()
 
 int SimpleLowPass::GetPreferredPacketSize()
 {
-	return 512;
+    return 512;
 }
 
 void SimpleLowPass::Configure(const AUDIODRIVERCAPS& caps)
@@ -81,42 +81,42 @@ void SimpleLowPass::Process(float** in, float** out, int offset, int samples)
 
 void SimpleLowPass::Process(float** in, int offset, int samples)
 {
-	static float fPrev = in[0][0];
-	float *pSrc = in[0] + offset;
+    static float fPrev = in[0][0];
+    float *pSrc = in[0] + offset;
 
-	for (int i = 0; i < samples; i++) {
-		pSrc[i] = m_fAlpha * pSrc[i] + (1.0f - m_fAlpha) * fPrev;
-		fPrev = pSrc[i];
-	}
+    for (int i = 0; i < samples; i++) {
+        pSrc[i] = m_fAlpha * pSrc[i] + (1.0f - m_fAlpha) * fPrev;
+        fPrev = pSrc[i];
+    }
 }
 
 const int SimpleLowPass::GetInputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const int SimpleLowPass::GetOutputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const char* SimpleLowPass::GetDescription()
 {
-	return "SimpleLowPass v0.1";
+    return "SimpleLowPass v0.1";
 }
 
 extern "C" __declspec(dllexport) void GetAudioEffectFactory(LPAUDIOEFFECT *lpAudioEffect)
 {
-	*lpAudioEffect = new SimpleLowPass();
+    *lpAudioEffect = new SimpleLowPass();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 {
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
+    switch (fdwReason) {
+    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
 
-	return TRUE;
+    return TRUE;
 }

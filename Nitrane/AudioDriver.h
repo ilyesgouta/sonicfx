@@ -34,31 +34,31 @@
 #endif
 
 typedef struct AUDIODRIVERCAPS {
-	int nPacketSize;
-	int nSamplingRate;
-	int nPackets;
-	short **lpPlaybackBuffer;
-	short **lpCaptureBuffer;
-	LPHANDLE hpPacketEvent;
+    int nPacketSize;
+    int nSamplingRate;
+    int nPackets;
+    short **lpPlaybackBuffer;
+    short **lpCaptureBuffer;
+    LPHANDLE hpPacketEvent;
 } AUDIODRIVERCAPS, *LPAUDIODRIVERCAPS;
 
 class DECLSPEC AudioDriver {
 public:
-	AudioDriver();
-	virtual ~AudioDriver();
+    AudioDriver();
+    virtual ~AudioDriver();
 
-	virtual BOOL Open(LPAUDIODRIVERCAPS lpAudioDriverCaps) = 0;
-	virtual void Close(LPAUDIODRIVERCAPS lpAudioDriverCaps) = 0;
+    virtual BOOL Open(LPAUDIODRIVERCAPS lpAudioDriverCaps) = 0;
+    virtual void Close(LPAUDIODRIVERCAPS lpAudioDriverCaps) = 0;
 
-	virtual BOOL Start() = 0;
-	virtual void Stop() = 0;
+    virtual BOOL Start() = 0;
+    virtual void Stop() = 0;
 
-	virtual void Write(int idx) = 0;
+    virtual void Write(int idx) = 0;
 
-	virtual void SetQueueSize(int cPackets) = 0;
-	virtual float GetPacketLatency() = 0;
+    virtual void SetQueueSize(int cPackets) = 0;
+    virtual float GetPacketLatency() = 0;
 
-	virtual const char* GetDescription() = 0;
+    virtual const char* GetDescription() = 0;
 };
 
 typedef class AudioDriver AUDIODRIVER;

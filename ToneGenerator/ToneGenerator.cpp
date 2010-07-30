@@ -24,36 +24,36 @@
 
 class __declspec(dllexport) ToneGenerator : public AudioEffect {
 public:
-	ToneGenerator();
-	~ToneGenerator();
+    ToneGenerator();
+    ~ToneGenerator();
 
-	BOOL Initialize();
-	void Finalize();
+    BOOL Initialize();
+    void Finalize();
 
-	BOOL IsMultiThreadable() { return FALSE; }
-	BOOL IsInPlaceProcessing() { return FALSE; }
-	
-	int GetPreferredPacketSize();
-	void Configure(const AUDIODRIVERCAPS& caps);
+    BOOL IsMultiThreadable() { return FALSE; }
+    BOOL IsInPlaceProcessing() { return FALSE; }
+    
+    int GetPreferredPacketSize();
+    void Configure(const AUDIODRIVERCAPS& caps);
 
-	void Process(float** in, float** out, int offset, int samples);
-	void Process(float** in, int offset, int samples);
-	
-	const char* GetDescription();
+    void Process(float** in, float** out, int offset, int samples);
+    void Process(float** in, int offset, int samples);
+    
+    const char* GetDescription();
 
-	const int GetInputPinsCount() const;
-	const int GetOutputPinsCount() const;
+    const int GetInputPinsCount() const;
+    const int GetOutputPinsCount() const;
 
 private:
-	float m_fTime;
-	float m_fFrequency;
-	int m_SamplingFreq;
+    float m_fTime;
+    float m_fFrequency;
+    int m_SamplingFreq;
 };
 
 ToneGenerator::ToneGenerator()
 {
-	m_fTime = 0.0f;
-	m_fFrequency = 600;
+    m_fTime = 0.0f;
+    m_fFrequency = 600;
 }
 
 ToneGenerator::~ToneGenerator()
@@ -62,7 +62,7 @@ ToneGenerator::~ToneGenerator()
 
 BOOL ToneGenerator::Initialize()
 {
-	return TRUE;
+    return TRUE;
 }
 
 void ToneGenerator::Finalize()
@@ -71,23 +71,23 @@ void ToneGenerator::Finalize()
 
 int ToneGenerator::GetPreferredPacketSize()
 {
-	return 512;
+    return 512;
 }
 
 void ToneGenerator::Configure(const AUDIODRIVERCAPS& caps)
 {
-	m_SamplingFreq = caps.nSamplingRate;
+    m_SamplingFreq = caps.nSamplingRate;
 }
 
 void ToneGenerator::Process(float** in, float** out, int offset, int samples)
 {
-	float *pSample = out[0];
+    float *pSample = out[0];
 
-	for (int i = 0; i < samples; i++) {
-		*pSample++ = 16384.0f * sin(2 * 3.1415f * m_fFrequency * m_fTime);
-		m_fFrequency = 600 + 200 * sin(2 * 3.1415f * 10 * m_fTime); // Sweep period is 5 seconds.
-		m_fTime += 1.0f / m_SamplingFreq;
-	}
+    for (int i = 0; i < samples; i++) {
+        *pSample++ = 16384.0f * sin(2 * 3.1415f * m_fFrequency * m_fTime);
+        m_fFrequency = 600 + 200 * sin(2 * 3.1415f * 10 * m_fTime); // Sweep period is 5 seconds.
+        m_fTime += 1.0f / m_SamplingFreq;
+    }
 }
 
 void ToneGenerator::Process(float** in, int offset, int samples)
@@ -96,31 +96,31 @@ void ToneGenerator::Process(float** in, int offset, int samples)
 
 const int ToneGenerator::GetInputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const int ToneGenerator::GetOutputPinsCount() const
 {
-	return 1;
+    return 1;
 }
 
 const char* ToneGenerator::GetDescription()
 {
-	return "ToneGenerator v0.1";
+    return "ToneGenerator v0.1";
 }
 
 extern "C" __declspec(dllexport) void GetAudioEffectFactory(LPAUDIOEFFECT *lpAudioEffect)
 {
-	*lpAudioEffect = new ToneGenerator();
+    *lpAudioEffect = new ToneGenerator();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 {
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
+    switch (fdwReason) {
+    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
 
-	return TRUE;
+    return TRUE;
 }

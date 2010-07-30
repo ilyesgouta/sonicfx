@@ -82,6 +82,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\Nitrane\AudioDriver.h" />
     <ClInclude Include="..\..\Nitrane\AudioEffect.h" />
+    <ClInclude Include="..\..\Nitrane\NiDebug.h" />
     <ClInclude Include="..\..\Nitrane\Nitrane.h" />
   </ItemGroup>
   <ItemGroup>

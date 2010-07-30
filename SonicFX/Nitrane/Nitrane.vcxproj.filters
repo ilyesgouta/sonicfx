@@ -38,6 +38,9 @@
     <ClInclude Include="..\..\Nitrane\Nitrane.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Nitrane\NiDebug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\Nitrane\Utils.asm">

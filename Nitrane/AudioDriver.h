@@ -34,9 +34,11 @@
 #endif
 
 typedef struct AUDIODRIVERCAPS {
-    int nPacketSize;
-    int nSamplingRate;
-    int nPackets;
+    unsigned int iPreferredCaptureDevice;
+    unsigned int iPreferredRenderDevice;
+    unsigned int nPacketSize;
+    unsigned int nSamplingRate;
+    unsigned int nPackets;
     short **lpPlaybackBuffer;
     short **lpCaptureBuffer;
     LPHANDLE hpPacketEvent;

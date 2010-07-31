@@ -20,9 +20,9 @@
 #define __NIDEBUG__
 
 #ifdef _DEBUG
-#define NiDebug(a, ...) printf(a##" in function %s, file: %s\n", ..., __FUNCTION__, __FILE__)
+#define NiDebug(a, ...) printf(a##", in function: %s, file: %s\n", __VA_ARGS__, __FUNCTION__, __FILE__)
 #else
-#define NiDebug(a)
+#define NiDebug(a, ...)
 #endif
 
 #endif

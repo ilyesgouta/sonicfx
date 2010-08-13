@@ -136,7 +136,7 @@ BOOL WaveInDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
 
     ZeroMemory(m_waveInHeader, WAVEHEADERSCOUNT * sizeof(WAVEHDR));
     ZeroMemory(m_waveOutHeader, WAVEHEADERSCOUNT * sizeof(WAVEHDR));
-    
+
     for (int i = 0; i < WAVEHEADERSCOUNT; i++) {
         m_lpCaptureBuffer[i] = (short*)GlobalAlloc(GPTR, lpCaps->nPacketSize * sizeof(short) + 15);
         m_lpPlaybackBuffer[i] = (short*)GlobalAlloc(GPTR, (lpCaps->nPacketSize + 15) * sizeof(short));
@@ -157,6 +157,7 @@ BOOL WaveInDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
 
     ZeroMemory(&format, sizeof(format));
 
+    // Fixed sampling rate and block size
     format.wFormatTag = WAVE_FORMAT_PCM;
     format.nChannels = 1;
     format.nSamplesPerSec = 44100;
@@ -190,7 +191,7 @@ void WaveInDriver::Close(LPAUDIODRIVERCAPS lpCaps)
         waveOutClose(m_hWaveOut);
         m_hWaveOut = NULL;
     }
-        
+
     if (m_hWaveIn) {
         waveInClose(m_hWaveIn);
         m_hWaveIn = NULL;

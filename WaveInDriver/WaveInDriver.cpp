@@ -126,7 +126,7 @@ BOOL WaveInDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
 
     lpCaps = lpAudioDriverCaps;
 
-    lpCaps->nPackets = WAVEHEADERSCOUNT;
+    lpCaps->nBuffers = WAVEHEADERSCOUNT;
     lpCaps->nSamplingRate = 44100;
     lpCaps->hpPacketEvent = new HANDLE[WAVEHEADERSCOUNT];
     lpCaps->lpPlaybackBuffer = new short*[WAVEHEADERSCOUNT];
@@ -138,17 +138,17 @@ BOOL WaveInDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
     ZeroMemory(m_waveOutHeader, WAVEHEADERSCOUNT * sizeof(WAVEHDR));
 
     for (int i = 0; i < WAVEHEADERSCOUNT; i++) {
-        m_lpCaptureBuffer[i] = (short*)GlobalAlloc(GPTR, lpCaps->nPacketSize * sizeof(short) + 15);
-        m_lpPlaybackBuffer[i] = (short*)GlobalAlloc(GPTR, (lpCaps->nPacketSize + 15) * sizeof(short));
+        m_lpCaptureBuffer[i] = (short*)GlobalAlloc(GPTR, lpCaps->buffer.nBufferSize * sizeof(short) + 15);
+        m_lpPlaybackBuffer[i] = (short*)GlobalAlloc(GPTR, (lpCaps->buffer.nBufferSize + 15) * sizeof(short));
 
         m_lpAlignedCaptureBuffer[i] = (short*)(((unsigned int)m_lpCaptureBuffer[i] + 15L) & ~15L);
         m_lpAlignedPlaybackBuffer[i] = (short*)(((unsigned int)m_lpPlaybackBuffer[i] + 15L) & ~15L);
 
         m_waveInHeader[i].lpData = (LPSTR)m_lpAlignedCaptureBuffer[i];
-        m_waveInHeader[i].dwBufferLength = lpCaps->nPacketSize * sizeof(short);
+        m_waveInHeader[i].dwBufferLength = lpCaps->buffer.nBufferSize * sizeof(short);
 
         m_waveOutHeader[i].lpData = (LPSTR)m_lpAlignedPlaybackBuffer[i];
-        m_waveOutHeader[i].dwBufferLength = lpCaps->nPacketSize * sizeof(short);
+        m_waveOutHeader[i].dwBufferLength = lpCaps->buffer.nBufferSize * sizeof(short);
 
         lpCaps->lpCaptureBuffer[i] = (short*)m_waveInHeader[i].lpData;
         lpCaps->lpPlaybackBuffer[i] = (short*)m_waveOutHeader[i].lpData;

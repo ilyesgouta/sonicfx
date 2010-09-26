@@ -36,9 +36,12 @@
 typedef struct AUDIODRIVERCAPS {
     unsigned int iPreferredCaptureDevice;
     unsigned int iPreferredRenderDevice;
-    unsigned int nPacketSize;
+    union {
+        unsigned int nBufferSize;
+        unsigned int tBufferDurationNS;
+    } buffer;
     unsigned int nSamplingRate;
-    unsigned int nPackets;
+    unsigned int nBuffers;
     short **lpPlaybackBuffer;
     short **lpCaptureBuffer;
     LPHANDLE hpPacketEvent;

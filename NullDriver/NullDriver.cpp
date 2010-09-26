@@ -52,22 +52,22 @@ private:
 
     short* lpAlignedPlaybackBuffer[AUDIO_BUFFERS_COUNT];
     short* lpAlignedCaptureBuffer[AUDIO_BUFFERS_COUNT];
-    
+
     LPAUDIODRIVERCAPS lpCaps;
-    
+
     friend DWORD WINAPI DummyThread(LPVOID lpParam);
 };
 
 DWORD WINAPI DummyThread(LPVOID lpParam)
 {
     NullAudioDriver *pDriver = (NullAudioDriver*)lpParam;
-    
+
     for (int i = 0; pDriver->bRun; ++i %= AUDIO_BUFFERS_COUNT) {
         printf("NullAudioDriver: Pumping event...\n");
         SetEvent(pDriver->lpCaps->hpPacketEvent[i]);
         Sleep(150);
     }
-    
+
     return 0;
 }
 
@@ -82,15 +82,15 @@ NullAudioDriver::~NullAudioDriver()
 BOOL NullAudioDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
 {
     // Fill up the remaining fields of the caps structure.
-    lpAudioDriverCaps->nPackets = AUDIO_BUFFERS_COUNT;
+    lpAudioDriverCaps->nBuffers = AUDIO_BUFFERS_COUNT;
     lpAudioDriverCaps->nSamplingRate = 0;
     lpAudioDriverCaps->lpPlaybackBuffer = new short*[AUDIO_BUFFERS_COUNT];
     lpAudioDriverCaps->lpCaptureBuffer = new short*[AUDIO_BUFFERS_COUNT];
     lpAudioDriverCaps->hpPacketEvent = new HANDLE[AUDIO_BUFFERS_COUNT];
-    
+
     for (int i = 0; i < AUDIO_BUFFERS_COUNT; i++) {
-        lpPlaybackBuffer[i] = (short*)GlobalAlloc(GPTR, (lpAudioDriverCaps->nPacketSize + 15) * sizeof(short));
-        lpCaptureBuffer[i] = (short*)GlobalAlloc(GPTR, (lpAudioDriverCaps->nPacketSize + 15) * sizeof(short));
+        lpPlaybackBuffer[i] = (short*)GlobalAlloc(GPTR, (lpAudioDriverCaps->buffer.nBufferSize + 15) * sizeof(short));
+        lpCaptureBuffer[i] = (short*)GlobalAlloc(GPTR, (lpAudioDriverCaps->buffer.nBufferSize + 15) * sizeof(short));
 
         // Align the buffers on a 16-byte boundary.
         lpAlignedPlaybackBuffer[i] = (short*)(((unsigned int)lpPlaybackBuffer[i] + 15L) & ~15L);
@@ -100,11 +100,11 @@ BOOL NullAudioDriver::Open(LPAUDIODRIVERCAPS lpAudioDriverCaps)
         lpAudioDriverCaps->lpPlaybackBuffer[i] = lpAlignedPlaybackBuffer[i];
         lpAudioDriverCaps->lpCaptureBuffer[i] = lpAlignedCaptureBuffer[i];
     }
-    
+
     lpCaps = lpAudioDriverCaps; // We maintain an internal copy on this structure.
 
     printf("NullAudioDriver: Initialization done.\n");
-    
+
     return TRUE;
 }
 
@@ -123,11 +123,11 @@ void NullAudioDriver::Close(LPAUDIODRIVERCAPS lpCaps)
 BOOL NullAudioDriver:: Start()
 {
     DWORD dwThreadID;
-    
+
     bRun = TRUE;
 
     printf("NullAudioDriver: Start.\n");
-    
+
     hThread = CreateThread(NULL, 0, DummyThread, this, 0, &dwThreadID);
     return (hThread != NULL);
 }
@@ -135,10 +135,10 @@ BOOL NullAudioDriver:: Start()
 void NullAudioDriver::Stop()
 {
     bRun = FALSE;
-    
+
     if (WaitForSingleObject(hThread, 500) == WAIT_TIMEOUT)
         TerminateThread(hThread, 0);
-    
+
     CloseHandle(hThread);
 
     printf("NullAudioDriver: Stop.\n");

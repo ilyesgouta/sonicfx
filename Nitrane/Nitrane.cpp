@@ -60,7 +60,7 @@ DWORD WINAPI SlaveThread(LPVOID lpData)
         else lpEffectCtx->lpEffect->Process(lpEffectCtx->ppIn, lpEffectCtx->ppOut, lpPtCtx->idxOffset, lpPtCtx->nSamples);
 
         LONG prev = InterlockedIncrement(&lpPtCtx->lpSharedCtx->nProcessingThreads);
-            
+
         if (prev == lpPtCtx->lpSharedCtx->lpNitrane->m_ThreadsCount) {
             printf("Thread: 0x%x -> Firing completion event...\n", GetCurrentThreadId());
             SetEvent(lpPtCtx->lpSharedCtx->hCompletionEvent);
@@ -74,7 +74,7 @@ DWORD WINAPI MasterThread(LPVOID lpData)
 {
     volatile LPSHAREDCTX lpSharedCtx = (LPSHAREDCTX)lpData;
     volatile LPAUDIODRIVERCAPS lpCaps;
-    
+
     lpCaps = &lpSharedCtx->lpNitrane->m_AudioCaps;
 
     while (lpSharedCtx->lpNitrane->m_bProcess)
@@ -88,40 +88,40 @@ DWORD WINAPI MasterThread(LPVOID lpData)
         if (!lpSharedCtx->lpNitrane->m_bProcess)
             break;
 
-        DWORD dwResult = WaitForMultipleObjects(lpCaps->nPackets, lpCaps->hpPacketEvent, FALSE, 300);
+        DWORD dwResult = WaitForMultipleObjects(lpCaps->nBuffers, lpCaps->hpPacketEvent, FALSE, 300);
 
         if (!lpSharedCtx->lpNitrane->m_bProcess)
             break;
-        
+
         if (dwResult == WAIT_TIMEOUT) {
             printf("MasterThread: WaitForMultipleObjects timed out!\n");
             continue;
         }
 
-        if ((dwResult >= WAIT_ABANDONED_0) && (dwResult <= (WAIT_ABANDONED_0 + lpCaps->nPackets - 1))) {
+        if ((dwResult >= WAIT_ABANDONED_0) && (dwResult <= (WAIT_ABANDONED_0 + lpCaps->nBuffers - 1))) {
             LeaveCriticalSection(&lpSharedCtx->m_CS);
             printf("MasterThread: audio packet abandoned!\n");
             break;
         }
-        
-        if ((dwResult >= WAIT_OBJECT_0) && (dwResult <= (WAIT_OBJECT_0 + lpCaps->nPackets - 1))) // We got a new audio packet.
+
+        if ((dwResult >= WAIT_OBJECT_0) && (dwResult <= (WAIT_OBJECT_0 + lpCaps->nBuffers - 1))) // We got a new audio packet.
         {
             int idxObject = dwResult - WAIT_OBJECT_0;
             //printf("MasterThread: received an audio packet!\n");
-            
+
             // Fast SSE2 16bit to float conversion.
-            short2float(lpCaps->lpCaptureBuffer[idxObject], lpSharedCtx->lpNitrane->m_HeadEffect->ppOut[0], lpCaps->nPacketSize);
-            
+            short2float(lpCaps->lpCaptureBuffer[idxObject], lpSharedCtx->lpNitrane->m_HeadEffect->ppOut[0], lpCaps->buffer.nBufferSize);
+
             // Processing...
             lpSharedCtx->lpNitrane->ProcessEffects();
 
             // Fast SSE2 float to 16bit conversion.
-            float2short(lpSharedCtx->lpNitrane->m_TailEffect->ppIn[0], lpCaps->lpPlaybackBuffer[lpSharedCtx->idxOutputBuffer], lpCaps->nPacketSize);
+            float2short(lpSharedCtx->lpNitrane->m_TailEffect->ppIn[0], lpCaps->lpPlaybackBuffer[lpSharedCtx->idxOutputBuffer], lpCaps->buffer.nBufferSize);
 
             lpSharedCtx->lpNitrane->m_lpAudioDriver->Write(lpSharedCtx->idxOutputBuffer);
 
             lpSharedCtx->idxOutputBuffer++;
-            lpSharedCtx->idxOutputBuffer %= lpCaps->nPackets;
+            lpSharedCtx->idxOutputBuffer %= lpCaps->nBuffers;
         }
     }
 
@@ -161,7 +161,7 @@ BOOL Nitrane::Initialize(char* path, int MaxThreads)
 {
     WIN32_FIND_DATA FindData;
     HANDLE hFind = INVALID_HANDLE_VALUE;
-    
+
     unsigned int SSE2FPUMask;
 
 #ifdef WIN32
@@ -171,10 +171,10 @@ BOOL Nitrane::Initialize(char* path, int MaxThreads)
 #else
     asm volatile ("stmxcsr %0" : "=g" (SSE2FPUMask) : );
 #endif
-    
+
     // Set the rounding mode to round toward zero instead of the default round to nearest.
     SSE2FPUMask |= (3L << 13);
-    
+
 #ifdef WIN32
     __asm {
         ldmxcsr SSE2FPUMask;
@@ -220,7 +220,7 @@ BOOL Nitrane::Initialize(char* path, int MaxThreads)
 
         LPAUDIODRIVERFACTORY lpDriverFacty = (LPAUDIODRIVERFACTORY)GetProcAddress(hModule, "GetAudioDriverFactory");
         LPAUDIOEFFECTFACTORY lpEffectFacty = (LPAUDIOEFFECTFACTORY)GetProcAddress(hModule, "GetAudioEffectFactory");
-            
+
         if (!lpDriverFacty && !lpEffectFacty) {
             FreeLibrary(hModule);
             continue;
@@ -242,7 +242,7 @@ BOOL Nitrane::Initialize(char* path, int MaxThreads)
     if (!m_AudioDrivers.size()) return FALSE;
 
     m_ThreadsCount = (MaxThreads > 0) ? MaxThreads : 1;
-    
+
     m_SharedCtx.lpNitrane = this;
     m_SharedCtx.nProcessingThreads = 0;
 
@@ -253,7 +253,7 @@ BOOL Nitrane::Initialize(char* path, int MaxThreads)
 
     m_hSuspendEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     m_hSuspendEventACK = CreateEvent(NULL, TRUE, FALSE, NULL);
-    
+
     InitializeCriticalSection(&m_SharedCtx.m_CS);
 
     m_phSlaveThread = new HANDLE[m_ThreadsCount];
@@ -394,11 +394,11 @@ void Nitrane::ResumeProcessing()
 BOOL Nitrane::Start()
 {
     if (!m_lpAudioDriver) return FALSE;
-    
+
     // Ask the attached effect plugins for their preferred packet size.
     int nSamples = NegotiatePacketSize();
     printf("Nitrane: negotiated packet size == %d\n", nSamples);
-    
+
     if (nSamples <= 0)
         return FALSE;
 
@@ -422,7 +422,7 @@ BOOL Nitrane::Start()
     memset(&m_AudioCaps, 0, sizeof(m_AudioCaps));
 
     // Recommended capture buffers size.
-    m_AudioCaps.nPacketSize = nSamples;
+    m_AudioCaps.buffer.nBufferSize = nSamples;
 
     if (!m_lpAudioDriver->Open(&m_AudioCaps))
         return FALSE;
@@ -537,7 +537,7 @@ BOOL Nitrane::ConnectEffect(LPEFFECTCTX lpFromEffect, LPEFFECTCTX lpToEffect, in
 
     if ((*(lpFromEffect->pOutputPins))[i])
         ((*(lpFromEffect->pOutputPins))[i])->ppIn[lpFromEffect->pinOut[i]] = NULL;
-    
+
     (*(lpFromEffect->pOutputPins))[i] = lpToEffect;
     (*(lpToEffect->pInputPins))[j] = lpFromEffect;
 
@@ -618,7 +618,7 @@ void Nitrane::ReconnectBuffers()
     {
         int cIn = (int)lpEffectCtx->pInputPins->size();
         int cOut = (int)lpEffectCtx->pOutputPins->size();
-        
+
         for (int i = 0; i < cOut; i++) {
             if ((*(lpEffectCtx->pOutputPins))[i])
                 ((*(lpEffectCtx->pOutputPins))[i])->ppIn[lpEffectCtx->pinOut[i]] = lpEffectCtx->ppOut[i];
@@ -690,7 +690,7 @@ void Nitrane::InitEffectsCtx()
 
         if (cIn > 1)
             lpEffectCtx->npInputs = 0;
-        
+
         for (int i = 0; i < cOut; i++)
             if (lpEffectCtx->bEnabled && (*lpEffectCtx->pOutputPins)[i])
                 stack.push_back((*lpEffectCtx->pOutputPins)[i]);

@@ -28,4 +28,3 @@ SonicFX/SimpleLowPass/Release
 SonicFX/ToneGenerator/Release
 SonicFX/WaveInDriver/Release
 SonicFX/SonicFX.opensdf
-SonicFX/CoreAudioDriver/CoreAudioDriver.vcxproj

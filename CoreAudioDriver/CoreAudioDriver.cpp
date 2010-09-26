@@ -24,11 +24,17 @@
 #include <windows.h>
 #include <Mmdeviceapi.h>
 #include <Audioclient.h>
+#include <Avrt.h>
+
 #include <stdio.h>
 #include <assert.h>
 
 #include <AudioDriver.h>
 #include <NiDebug.h>
+
+#define SAFE_RELEASE(punk)  \
+              if ((punk) != NULL)  \
+                { (punk)->Release(); (punk) = NULL; }
 
 class __declspec(dllexport) CoreAudioDriver : public AudioDriver {
 public:
@@ -50,22 +56,36 @@ public:
 
 private:
     IMMDevice *m_pCaptureDevice, *m_pRenderDevice;
-    LPWSTR m_CaptureId, m_RenderId; // WARN: the application has to free these strings
+    LPWSTR m_CaptureId, m_RenderId;
 
     // NOTE: one device for capturing but can be another one for rendering.
     IAudioClient *m_piCaptureAudioClient, *m_piRenderAudioClient;
 
     IAudioCaptureClient *m_piCaptureClient;
     IAudioRenderClient *m_piRenderClient;
+
+    HANDLE m_hCaptureEvent, m_hRenderEvent;
+
+    GUID m_SessionGUID;
+    HANDLE hTask;
 };
 
 CoreAudioDriver::CoreAudioDriver()
 {
-    m_pCaptureDevice = m_pRenderDevice = NULL;
-    m_piCaptureAudioClient = m_piCaptureAudioClient = NULL;
+    m_pCaptureDevice = NULL;
+    m_pRenderDevice = NULL;
+
+    m_piCaptureAudioClient = NULL;
+    m_piCaptureAudioClient = NULL;
+
     m_piCaptureClient = NULL;
     m_piRenderClient = NULL;
-    m_CaptureId = m_RenderId = NULL;
+
+    m_hCaptureEvent = NULL;
+    m_hRenderEvent = NULL;
+
+    m_CaptureId = NULL;
+    m_RenderId = NULL;
 }
 
 CoreAudioDriver::~CoreAudioDriver()
@@ -79,7 +99,10 @@ BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpCaps)
 
     IMMDeviceEnumerator *pEnumerator = NULL;
     IMMDeviceCollection *pRenderDevices = NULL, *pCaptureDevices = NULL;
+
     unsigned int nCaptureDevices, nRenderDevices;
+
+    WAVEFORMATEX wavefmtex;
 
     BOOL ret = TRUE;
 
@@ -87,7 +110,7 @@ BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpCaps)
 
     if (hr != S_OK) {
         NiDebug("CoCreateInstance failed!");
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
     // Only retrieve connected/active devices
@@ -96,7 +119,7 @@ BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpCaps)
 
     if (hr != S_OK) {
         NiDebug("Failed enumerating capture/render devices! error: 0x%08x", hr);
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
     pCaptureDevices->GetCount(&nCaptureDevices);
@@ -104,14 +127,14 @@ BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpCaps)
 
     if (!nCaptureDevices || !nRenderDevices) {
         NiDebug("Empty capture/render devices sets!");
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
     if ((lpCaps->iPreferredCaptureDevice >= nCaptureDevices) ||
         (lpCaps->iPreferredRenderDevice >= nRenderDevices))
     {
         NiDebug("Mismatching preferred capture/render device!");
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
     hr = pCaptureDevices->Item(lpCaps->iPreferredCaptureDevice, &m_pCaptureDevice);
@@ -119,12 +142,12 @@ BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpCaps)
 
     if (hr != S_OK) {
         NiDebug("Failed to retrieve a capture/render device! error: 0x%08x", hr);
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
     if (!m_pCaptureDevice || !m_pRenderDevice) {
         NiDebug("Bad capture/render device instance!");
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
     m_pCaptureDevice->GetId(&m_CaptureId);
@@ -138,36 +161,81 @@ BOOL CoreAudioDriver::Open(LPAUDIODRIVERCAPS lpCaps)
 
     if (hr != S_OK) {
         NiDebug("Failed activating capture/render audio clients! error: 0x%08x", hr);
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
     if (!m_piCaptureAudioClient || !m_piRenderAudioClient) {
         NiDebug("Failed instantiating capture/render audio clients! error: 0x%08x", hr);
-        ret = FALSE; goto fini;
+        ret = FALSE; goto fini0;
     }
 
-    // We have both clients, now get the real work done.
+    memset(&wavefmtex, 0, sizeof(wavefmtex));
 
-    // TODO: set the capture and render WAVEFORMATEX, buffer size and notification handlers
+    wavefmtex.cbSize = sizeof(WAVEFORMATEX);
+    wavefmtex.nChannels = 1;
+    wavefmtex.nBlockAlign = 2;
+    wavefmtex.nSamplesPerSec = lpCaps->nSamplingRate;
+    wavefmtex.nAvgBytesPerSec = wavefmtex.nSamplesPerSec * 2;
+    wavefmtex.wBitsPerSample = 16;
+    wavefmtex.wFormatTag = WAVE_FORMAT_PCM;
 
-    // Once configured, get the capture and render services from the clients and start pumping data
-    hr = m_piCaptureAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&m_piCaptureClient);
-    hr |= m_piRenderAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&m_piRenderClient);
+    hr = m_piCaptureAudioClient->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
+                                            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                            lpCaps->buffer.tBufferDurationNS, lpCaps->buffer.tBufferDurationNS, &wavefmtex, &m_SessionGUID);
 
     if (hr != S_OK) {
-        NiDebug("Failed activating capture/render audio services! error: 0x%08x", hr);
-        ret = FALSE; goto fini;
+        NiDebug("Failed initializing the audio capture client! error: 0x%08x", hr);
+        ret = FALSE; goto fini0;
     }
 
-fini:
-    if (pEnumerator)
-        pEnumerator->Release();
+    hr = m_piRenderAudioClient->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
+                                           AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                           lpCaps->buffer.tBufferDurationNS, lpCaps->buffer.tBufferDurationNS, &wavefmtex, &m_SessionGUID);
+
+    if (hr != S_OK) {
+        NiDebug("Failed initializing the audio render client! error: 0x%08x", hr);
+        ret = FALSE; goto fini0;
+    }
+
+    m_hCaptureEvent = CreateEvent(NULL, FALSE, FALSE, TEXT("SFXCaptureEvent"));
+    m_hRenderEvent = CreateEvent(NULL, FALSE, FALSE, TEXT("SFXRenderEvent"));
+
+    if (!m_hCaptureEvent || !m_hRenderEvent) {
+        NiDebug("Failed creating audio capture/render events!");
+        ret = FALSE; goto fini0;
+    }
+
+    m_piCaptureAudioClient->SetEventHandle(m_hCaptureEvent);
+    m_piRenderAudioClient->SetEventHandle(m_hRenderEvent);
+
+    // from Windows SDK, calls MMCSS to boost the thread's priority
+    DWORD taskIndex = 0;
+    hTask = AvSetMmThreadCharacteristics(TEXT("Pro Audio"), &taskIndex);
+
+    if (!hTask)
+        NiDebug("Failed boosting the thread's priority! error: 0x%08x", hr);
+
+fini0:
+    if (!ret && m_piCaptureAudioClient)
+        SAFE_RELEASE(m_piCaptureAudioClient);
+
+    if (!ret && m_piRenderAudioClient)
+        SAFE_RELEASE(m_piRenderAudioClient);
+
+    if (!ret && m_pRenderDevice)
+        SAFE_RELEASE(m_pRenderDevice);
+
+    if (!ret && m_pCaptureDevice)
+        SAFE_RELEASE(m_pCaptureDevice);
 
     if (pCaptureDevices)
-        pCaptureDevices->Release();
+        SAFE_RELEASE(pCaptureDevices);
 
     if (pRenderDevices)
-        pRenderDevices->Release();
+        SAFE_RELEASE(pRenderDevices);
+
+    if (pEnumerator)
+        SAFE_RELEASE(pEnumerator);
 
     return ret;
 }
@@ -175,38 +243,82 @@ fini:
 void CoreAudioDriver::Close(LPAUDIODRIVERCAPS lpCaps)
 {
     if (m_pRenderDevice)
-        m_pRenderDevice->Release();
+        SAFE_RELEASE(m_pRenderDevice);
 
     if (m_pCaptureDevice)
-        m_pCaptureDevice->Release();
+        SAFE_RELEASE(m_pCaptureDevice);
 
     if (m_piCaptureAudioClient)
-        m_piCaptureAudioClient->Release();
+        SAFE_RELEASE(m_piCaptureAudioClient);
 
     if (m_piRenderAudioClient)
-        m_piCaptureAudioClient->Release();
+        SAFE_RELEASE(m_piCaptureAudioClient);
 
     if (m_piCaptureClient)
-        m_piCaptureClient->Release();
+        SAFE_RELEASE(m_piCaptureClient);
 
     if (m_piRenderClient)
-        m_piRenderClient->Release();
+        SAFE_RELEASE(m_piRenderClient);
 
-    m_pRenderDevice = NULL;
-    m_pCaptureDevice = NULL;
-    m_piCaptureAudioClient = NULL;
-    m_piRenderAudioClient = NULL;
-    m_piCaptureClient = NULL;
-    m_piRenderClient = NULL;
+    if (m_CaptureId) {
+        CoTaskMemFree(m_CaptureId);
+        m_CaptureId = NULL;
+    }
+
+    if (m_RenderId) {
+        CoTaskMemFree(m_RenderId);
+        m_RenderId = NULL;
+    }
 }
 
 BOOL CoreAudioDriver::Start()
 {
-    return TRUE;
+    HRESULT hr;
+
+    if (!m_piCaptureAudioClient || !m_piRenderAudioClient) {
+        NiDebug("Invalid capture/render client!");
+        return FALSE;
+    }
+
+    if (!m_piCaptureClient || !m_piRenderClient) {
+        hr = m_piCaptureAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&m_piCaptureClient);
+        hr |= m_piRenderAudioClient->GetService(__uuidof(IAudioRenderClient), (void**)&m_piRenderClient);
+
+        if (hr != S_OK) {
+            NiDebug("Failed activating capture/render audio services! error: 0x%08x", hr);
+            goto fini1;
+        }
+    }
+
+    hr = m_piCaptureAudioClient->Start();
+    hr |= m_piRenderAudioClient->Start();
+
+    return (hr == S_OK);
+
+fini1:
+    if (m_piCaptureClient)
+        SAFE_RELEASE(m_piCaptureClient);
+
+    if (m_piRenderClient)
+        SAFE_RELEASE(m_piRenderClient);
+
+    return FALSE;
 }
 
 void CoreAudioDriver::Stop()
 {
+    HRESULT hr;
+
+    if (!m_piCaptureAudioClient || !m_piRenderAudioClient) {
+        NiDebug("Invalid capture/render client!");
+        return;
+    }
+
+    hr = m_piCaptureAudioClient->Stop();
+    hr |= m_piRenderAudioClient->Stop();
+
+    if (hr != S_OK)
+        NiDebug("Failed stopping capture/render audio clients!");
 }
 
 void CoreAudioDriver::Write(int idx)
